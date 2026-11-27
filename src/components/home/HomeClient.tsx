@@ -4,16 +4,20 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Compass, RotateCcw, Shuffle } from "lucide-react";
 import { ALL_PROVINCES } from "@/data/provinces";
+import { STORY_TOURS, StoryTour } from "@/data/storyTours";
 import { Province } from "@/types/culture";
 import { useNusantaraStore } from "@/store/useNusantaraStore";
 import { UI_COPY, t } from "@/lib/i18n";
-import { playHoverTone, playProvinceChime } from "@/lib/sound";
+import { playHoverTone, playProvinceChime, playStampSound } from "@/lib/sound";
 import { NusantaraHeader } from "@/components/layout/NusantaraHeader";
 import { WelcomeMenu } from "@/components/home/WelcomeMenu";
 import {
   ExploreHubModal,
   ExploreHubTab,
 } from "@/components/home/ExploreHubModal";
+import { CompareProvincesModal } from "@/components/home/CompareProvincesModal";
+import { StoryTourOverlay } from "@/components/home/StoryTourOverlay";
+import { GeoGameOverlay, GeoGameRound } from "@/components/home/GeoGameOverlay";
 import { ProvinceDrawer } from "@/components/map/ProvinceDrawer";
 import { Map2DFallback } from "@/components/diorama/Map2DFallback";
 import { WebGLErrorBoundary } from "@/components/diorama/WebGLErrorBoundary";
@@ -36,6 +40,28 @@ const DioramaCanvas = dynamic(
   }
 );
 
+function generateGeoRounds(count = 5): GeoGameRound[] {
+  const cats: GeoGameRound["clueCategory"][] = [
+    "rumah-adat",
+    "kuliner",
+    "tarian",
+    "alat-musik",
+  ];
+  const shuffled = [...ALL_PROVINCES].sort(() => Math.random() - 0.5);
+  const picks = shuffled.slice(0, count);
+  return picks.map((province, idx) => {
+    const cat = cats[idx % cats.length];
+    const item =
+      province.items.find((it) => it.category === cat) ?? province.items[0];
+    return {
+      province,
+      clueCategory: cat,
+      clueName: item.name,
+      clueSummary: item.summary,
+    };
+  });
+}
+
 export function HomeClient() {
   const {
     hasHydrated,
@@ -44,10 +70,12 @@ export function HomeClient() {
     mapMode,
     soundEnabled,
     introSeen,
+    geoBestScore,
     stamps,
     toggleLocale,
     toggleThemeMode,
     markIntroSeen,
+    updateGeoBestScore,
     earnStamp,
     exportBackupCode,
     importBackupCode,
@@ -56,6 +84,7 @@ export function HomeClient() {
   const [menuOpen, setMenuOpen] = useState(true);
   const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreTab, setExploreTab] = useState<ExploreHubTab>("spotlight");
+  const [compareOpen, setCompareOpen] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(
     null
   );
@@ -63,10 +92,27 @@ export function HomeClient() {
   const [quizProvince, setQuizProvince] = useState<Province | null>(null);
   const [passportOpen, setPassportOpen] = useState(false);
 
+  // Story Tour state
+  const [activeTour, setActiveTour] = useState<StoryTour | null>(null);
+  const [tourStopIndex, setTourStopIndex] = useState(0);
+
+  // Geo-Culture 3D Game state
+  const [geoRounds, setGeoRounds] = useState<GeoGameRound[]>([]);
+  const [geoIndex, setGeoIndex] = useState(0);
+  const [geoScore, setGeoScore] = useState(0);
+  const [geoHint, setGeoHint] = useState(false);
+  const [geoLastGuess, setGeoLastGuess] = useState<{
+    guessed: Province;
+    correct: boolean;
+  } | null>(null);
+  const [geoFinished, setGeoFinished] = useState(false);
+
+  const isGeoActive = geoRounds.length > 0;
   const safeLocale = hasHydrated ? locale : "id";
   const safeTheme = hasHydrated ? themeMode : "day";
   const safeMapMode = hasHydrated ? mapMode : "3d";
   const safeStamps = hasHydrated ? stamps : {};
+  const safeBestScore = hasHydrated ? geoBestScore : 0;
   const isNight = safeTheme === "night";
 
   useEffect(() => {
@@ -82,9 +128,80 @@ export function HomeClient() {
     }
   }, []);
 
+  // Sync selectedProvince with active Story Tour stop
+  useEffect(() => {
+    if (!activeTour) return;
+    const stop = activeTour.stops[tourStopIndex];
+    const prov = ALL_PROVINCES.find((p) => p.slug === stop.provinceSlug);
+    if (prov) {
+      setSelectedProvince(prov);
+      playProvinceChime(soundEnabled, tourStopIndex);
+    }
+  }, [activeTour, tourStopIndex, soundEnabled]);
+
+  const startStoryTour = (tour: StoryTour = STORY_TOURS[0]) => {
+    setGeoRounds([]);
+    setMenuOpen(false);
+    setExploreOpen(false);
+    markIntroSeen();
+    setActiveTour(tour);
+    setTourStopIndex(0);
+  };
+
+  const startGeoGame = () => {
+    setActiveTour(null);
+    setMenuOpen(false);
+    setExploreOpen(false);
+    markIntroSeen();
+    setSelectedProvince(null);
+    setGeoRounds(generateGeoRounds(5));
+    setGeoIndex(0);
+    setGeoScore(0);
+    setGeoHint(false);
+    setGeoLastGuess(null);
+    setGeoFinished(false);
+  };
+
+  const handleProvinceClickOnMap = (prov: Province | null) => {
+    if (isGeoActive) {
+      if (!prov || geoLastGuess || geoFinished) return;
+      const target = geoRounds[geoIndex].province;
+      const correct = prov.slug === target.slug;
+      const nextScore = correct ? geoScore + 1 : geoScore;
+      setGeoScore(nextScore);
+      setGeoLastGuess({ guessed: prov, correct });
+      setSelectedProvince(target);
+      if (correct) {
+        playStampSound(soundEnabled);
+      } else {
+        playProvinceChime(soundEnabled, 1);
+      }
+      return;
+    }
+
+    if (activeTour) return;
+    setSelectedProvince(prov);
+    if (prov) playProvinceChime(soundEnabled, prov.name.id.length);
+  };
+
+  const handleNextGeoRound = () => {
+    if (geoIndex + 1 < geoRounds.length) {
+      setGeoIndex((i) => i + 1);
+      setGeoHint(false);
+      setGeoLastGuess(null);
+      setSelectedProvince(null);
+    } else {
+      updateGeoBestScore(geoScore);
+      setGeoFinished(true);
+      setSelectedProvince(null);
+    }
+  };
+
   const handleSelectBySlug = (slug: string) => {
     const found = ALL_PROVINCES.find((p) => p.slug === slug);
     if (found) {
+      setActiveTour(null);
+      setGeoRounds([]);
       setMenuOpen(false);
       setExploreOpen(false);
       setSelectedProvince(found);
@@ -93,6 +210,8 @@ export function HomeClient() {
   };
 
   const handleSurpriseMe = () => {
+    setActiveTour(null);
+    setGeoRounds([]);
     const pool = ALL_PROVINCES.filter(
       (p) => p.slug !== selectedProvince?.slug
     );
@@ -105,7 +224,7 @@ export function HomeClient() {
 
   const handleHoverProvince = (slug: string | null) => {
     setHoveredSlug(slug);
-    if (slug) {
+    if (slug && !isGeoActive) {
       const idx = ALL_PROVINCES.findIndex((p) => p.slug === slug);
       playHoverTone(soundEnabled, idx >= 0 ? idx : 0);
     }
@@ -117,7 +236,13 @@ export function HomeClient() {
     [hoveredSlug]
   );
 
-  const activeRegionLabel = selectedProvince
+  const activeRegionLabel = isGeoActive
+    ? safeLocale === "id"
+      ? "Mode Tantangan · Tebak Provinsi"
+      : "Challenge Mode · Guess Province"
+    : activeTour
+    ? activeTour.title[safeLocale]
+    : selectedProvince
     ? `${selectedProvince.name[safeLocale]} · ${selectedProvince.capital}`
     : hoveredProvince
     ? `${hoveredProvince.name[safeLocale]} · ${hoveredProvince.islandLabel[safeLocale]}`
@@ -143,10 +268,7 @@ export function HomeClient() {
                 activeIsland="all"
                 selectedProvince={selectedProvince}
                 stamps={safeStamps}
-                onSelectProvince={(prov) => {
-                  setSelectedProvince(prov);
-                  playProvinceChime(soundEnabled, prov.name.id.length);
-                }}
+                onSelectProvince={handleProvinceClickOnMap}
               />
             }
           >
@@ -155,14 +277,12 @@ export function HomeClient() {
               isNight={isNight}
               activeIsland="all"
               activeCategory="all"
+              activeTour={activeTour}
               selectedProvince={selectedProvince}
               stamps={safeStamps}
               playIntro={hasHydrated && !introSeen}
               onIntroFinished={markIntroSeen}
-              onSelectProvince={(prov) => {
-                setSelectedProvince(prov);
-                if (prov) playProvinceChime(soundEnabled, prov.name.id.length);
-              }}
+              onSelectProvince={handleProvinceClickOnMap}
               onHoverProvince={handleHoverProvince}
             />
           </WebGLErrorBoundary>
@@ -173,10 +293,7 @@ export function HomeClient() {
             activeIsland="all"
             selectedProvince={selectedProvince}
             stamps={safeStamps}
-            onSelectProvince={(prov) => {
-              setSelectedProvince(prov);
-              playProvinceChime(soundEnabled, prov.name.id.length);
-            }}
+            onSelectProvince={handleProvinceClickOnMap}
           />
         )}
 
@@ -206,16 +323,18 @@ export function HomeClient() {
             {safeLocale === "id" ? "Menu Utama" : "Main Menu"}
           </button>
 
-          <button
-            type="button"
-            onClick={handleSurpriseMe}
-            className="pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 text-xs font-medium text-[#F7F2E8] shadow-md transition-colors hover:bg-[var(--accent-hover)]"
-          >
-            <Shuffle className="h-3.5 w-3.5" />
-            <span>{t(UI_COPY.ctaSurprise, safeLocale)}</span>
-          </button>
+          {!activeTour && !isGeoActive && (
+            <button
+              type="button"
+              onClick={handleSurpriseMe}
+              className="pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 text-xs font-medium text-[#F7F2E8] shadow-md transition-colors hover:bg-[var(--accent-hover)]"
+            >
+              <Shuffle className="h-3.5 w-3.5" />
+              <span>{t(UI_COPY.ctaSurprise, safeLocale)}</span>
+            </button>
+          )}
 
-          {selectedProvince && (
+          {selectedProvince && !activeTour && !isGeoActive && (
             <button
               type="button"
               onClick={() => setSelectedProvince(null)}
@@ -229,22 +348,66 @@ export function HomeClient() {
           )}
         </div>
 
-        {/* Subtle bottom-left interaction cue */}
-        <div className="pointer-events-none absolute bottom-4 left-4 z-20 hidden rounded-full border border-white/10 bg-[#1B1410]/65 px-3.5 py-1.5 text-[11px] text-[#F5EFE4]/85 backdrop-blur-sm sm:block">
-          {safeLocale === "id"
-            ? "Scroll: Zoom In / Out · Seret: Putar Peta · Klik provinsi untuk detail"
-            : "Scroll: Zoom In / Out · Drag: Orbit · Click any province for details"}
-        </div>
+        {/* Subtle bottom-left interaction cue (hidden during tour/game overlays) */}
+        {!activeTour && !isGeoActive && (
+          <div className="pointer-events-none absolute bottom-4 left-4 z-20 hidden rounded-full border border-white/10 bg-[#1B1410]/65 px-3.5 py-1.5 text-[11px] text-[#F5EFE4]/85 backdrop-blur-sm sm:block">
+            {safeLocale === "id"
+              ? "Scroll: Zoom In / Out · Seret: Putar Peta · Klik provinsi untuk detail"
+              : "Scroll: Zoom In / Out · Drag: Orbit · Click any province for details"}
+          </div>
+        )}
 
-        <ProvinceDrawer
-          province={selectedProvince}
-          locale={safeLocale}
-          hasStamp={Boolean(
-            selectedProvince && safeStamps[selectedProvince.slug]
-          )}
-          onClose={() => setSelectedProvince(null)}
-          onOpenQuiz={(prov) => setQuizProvince(prov)}
-        />
+        {/* Active Story Tour HUD */}
+        {activeTour && (
+          <StoryTourOverlay
+            tour={activeTour}
+            stopIndex={tourStopIndex}
+            locale={safeLocale}
+            onChangeTour={(tObj) => {
+              setActiveTour(tObj);
+              setTourStopIndex(0);
+            }}
+            onChangeStop={(idx) => setTourStopIndex(idx)}
+            onExit={() => {
+              setActiveTour(null);
+              setSelectedProvince(null);
+            }}
+          />
+        )}
+
+        {/* Active Geo-Culture 3D Game HUD */}
+        {isGeoActive && (
+          <GeoGameOverlay
+            locale={safeLocale}
+            rounds={geoRounds}
+            roundIndex={geoIndex}
+            score={geoScore}
+            bestScore={safeBestScore}
+            showHint={geoHint}
+            lastGuess={geoLastGuess}
+            finished={geoFinished}
+            onToggleHint={() => setGeoHint((h) => !h)}
+            onNextRound={handleNextGeoRound}
+            onRestart={startGeoGame}
+            onExit={() => {
+              setGeoRounds([]);
+              setSelectedProvince(null);
+            }}
+          />
+        )}
+
+        {/* Province Preview Drawer (normal explore mode only) */}
+        {!activeTour && !isGeoActive && (
+          <ProvinceDrawer
+            province={selectedProvince}
+            locale={safeLocale}
+            hasStamp={Boolean(
+              selectedProvince && safeStamps[selectedProvince.slug]
+            )}
+            onClose={() => setSelectedProvince(null)}
+            onOpenQuiz={(prov) => setQuizProvince(prov)}
+          />
+        )}
       </section>
 
       <WelcomeMenu
@@ -256,10 +419,11 @@ export function HomeClient() {
           setMenuOpen(false);
           markIntroSeen();
         }}
-        onSurprise={() => {
+        onStartTour={() => startStoryTour(STORY_TOURS[0])}
+        onStartGeoGame={startGeoGame}
+        onOpenCompare={() => {
           setMenuOpen(false);
-          markIntroSeen();
-          handleSurpriseMe();
+          setCompareOpen(true);
         }}
         onOpenPassport={() => {
           setMenuOpen(false);
@@ -282,6 +446,12 @@ export function HomeClient() {
         onClose={() => setExploreOpen(false)}
         onFlyToProvince={handleSelectBySlug}
         onOpenPassport={() => setPassportOpen(true)}
+      />
+
+      <CompareProvincesModal
+        open={compareOpen}
+        locale={safeLocale}
+        onClose={() => setCompareOpen(false)}
       />
 
       <QuizModal

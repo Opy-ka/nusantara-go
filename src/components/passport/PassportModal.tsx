@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Award, Check, Copy, Download, ShieldCheck, Upload, X } from "lucide-react";
+import { Award, Check, Copy, Download, ImageDown, ShieldCheck, Upload, X } from "lucide-react";
 import { IslandKey, Locale } from "@/types/culture";
 import {
   ALL_PROVINCES,
@@ -66,6 +66,101 @@ export function PassportModal({
     const ok = onImportCode(importValue);
     setImportStatus(ok ? "ok" : "err");
     if (ok) setImportValue("");
+  };
+
+  const handleDownloadCardPng = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 640;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Archival dark soga cover card
+    ctx.fillStyle = "#1D1510";
+    ctx.fillRect(0, 0, 1080, 640);
+
+    // Subtle gold frame
+    ctx.strokeStyle = "#D49B35";
+    ctx.lineWidth = 4;
+    ctx.strokeRect(32, 32, 1016, 576);
+    ctx.strokeStyle = "rgba(212,155,53,0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(46, 46, 988, 548);
+
+    // Title & branding
+    ctx.fillStyle = "#D49B35";
+    ctx.font = "600 18px sans-serif";
+    ctx.fillText("REPUBLIK INDONESIA · PASPOR BUDAYA NUSANTARA", 80, 115);
+
+    ctx.fillStyle = "#F7F2E8";
+    ctx.font = "bold 56px Georgia, serif";
+    ctx.fillText("Nusantara.go", 80, 185);
+
+    const rank =
+      collectedTotal >= 38
+        ? "Penjelajah Nusantara Paripurna"
+        : collectedTotal >= 15
+        ? "Duta Budaya Nusantara"
+        : collectedTotal >= 6
+        ? "Penjelajah Kepulauan"
+        : "Perintis Jelajah Budaya";
+
+    ctx.fillStyle = "#E06D44";
+    ctx.font = "600 26px sans-serif";
+    ctx.fillText(rank, 80, 240);
+
+    // Big progress metric
+    ctx.fillStyle = "#F2BC52";
+    ctx.font = "bold 96px Georgia, serif";
+    ctx.fillText(`${collectedTotal} / ${TOTAL_INDONESIA_PROVINCES}`, 80, 385);
+
+    ctx.fillStyle = "#C5B7A6";
+    ctx.font = "500 22px sans-serif";
+    ctx.fillText(
+      locale === "id"
+        ? "Stempel Provinsi Indonesia Terkumpul"
+        : "Indonesian Province Stamps Collected",
+      80,
+      430
+    );
+
+    // Stamp badges preview on right
+    const earnedSlugs = Object.keys(stamps).slice(0, 8);
+    earnedSlugs.forEach((slug, i) => {
+      const prov = ALL_PROVINCES.find((p) => p.slug === slug);
+      if (!prov) return;
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const cx = 735 + col * 155;
+      const cy = 155 + row * 115;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(i % 2 === 0 ? -0.1 : 0.08);
+      ctx.beginPath();
+      ctx.arc(0, 0, 44, 0, Math.PI * 2);
+      ctx.strokeStyle = "#5EC282";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.fillStyle = "#F7F2E8";
+      ctx.font = "bold 16px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(prov.code, 0, 6);
+      ctx.restore();
+    });
+
+    ctx.fillStyle = "#8E7F6F";
+    ctx.font = "400 16px sans-serif";
+    ctx.fillText(
+      `nusantara.go · ${new Date().toLocaleDateString("id-ID")}`,
+      80,
+      565
+    );
+
+    const link = document.createElement("a");
+    link.download = `paspor-nusantara-${collectedTotal}-of-38.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   return (
@@ -138,9 +233,18 @@ export function PassportModal({
             </button>
           </div>
 
-          <div className="text-xs font-semibold text-[var(--ink-primary)] tabular-nums">
-            {collectedTotal} / {TOTAL_INDONESIA_PROVINCES}{" "}
-            {locale === "id" ? "Stempel Nusantara" : "Archipelago Stamps"}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDownloadCardPng}
+              className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border-strong)] bg-[var(--bg-canvas)] px-2.5 py-1 text-xs font-medium text-[var(--ink-primary)] transition-colors hover:border-[#D49B35]"
+            >
+              <ImageDown className="h-3.5 w-3.5 text-[var(--accent)]" />
+              <span>{locale === "id" ? "Unduh PNG" : "Save PNG"}</span>
+            </button>
+            <div className="text-xs font-semibold text-[var(--ink-primary)] tabular-nums">
+              {collectedTotal} / {TOTAL_INDONESIA_PROVINCES}
+            </div>
           </div>
         </div>
 

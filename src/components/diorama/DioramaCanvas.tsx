@@ -10,6 +10,9 @@ import { ALL_PROVINCES, ISLAND_REGIONS } from "@/data/provinces";
 import { BatikOcean } from "./BatikOcean";
 import { ProvinceTile3D } from "./ProvinceTile3D";
 import { Atmosphere3D } from "./Atmosphere3D";
+import { PinisiShips3D } from "./PinisiShips3D";
+import { StoryTrail3D } from "./StoryTrail3D";
+import { StoryTour } from "@/data/storyTours";
 
 const ARCHIPELAGO_CAMERA_POS: [number, number, number] = [0.2, 16.8, 20.8];
 const ARCHIPELAGO_TARGET: [number, number, number] = [0.2, 0.2, 0.4];
@@ -134,6 +137,7 @@ interface DioramaCanvasProps {
   isNight: boolean;
   activeIsland: IslandKey | "all";
   activeCategory: CategoryKey | "all";
+  activeTour?: StoryTour | null;
   selectedProvince: Province | null;
   stamps: Record<string, unknown>;
   playIntro: boolean;
@@ -147,6 +151,7 @@ export function DioramaCanvas({
   isNight,
   activeIsland,
   activeCategory,
+  activeTour = null,
   selectedProvince,
   stamps,
   playIntro,
@@ -188,6 +193,8 @@ export function DioramaCanvas({
         />
         <Atmosphere3D isNight={isNight} reducedMotion={reducedMotion} />
         <BatikOcean isNight={isNight} reducedMotion={reducedMotion} />
+        <PinisiShips3D isNight={isNight} reducedMotion={reducedMotion} />
+        <StoryTrail3D tour={activeTour} />
 
         {/* All 38 Active Provinces of Indonesia */}
         {ALL_PROVINCES.map((province) => {

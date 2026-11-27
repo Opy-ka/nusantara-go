@@ -18,6 +18,7 @@ interface NusantaraState {
   soundEnabled: boolean;
   introSeen: boolean;
   activeIsland: IslandKey | "all";
+  geoBestScore: number;
   stamps: Record<string, StampRecord>;
   setHasHydrated: (v: boolean) => void;
   setLocale: (locale: Locale) => void;
@@ -28,6 +29,7 @@ interface NusantaraState {
   toggleSound: () => void;
   markIntroSeen: () => void;
   setActiveIsland: (island: IslandKey | "all") => void;
+  updateGeoBestScore: (score: number) => void;
   earnStamp: (provinceSlug: string, score: number, total: number) => void;
   exportBackupCode: () => string;
   importBackupCode: (code: string) => boolean;
@@ -43,6 +45,7 @@ export const useNusantaraStore = create<NusantaraState>()(
       soundEnabled: false,
       introSeen: false,
       activeIsland: "all",
+      geoBestScore: 0,
       stamps: {},
 
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
@@ -56,6 +59,8 @@ export const useNusantaraStore = create<NusantaraState>()(
       toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
       markIntroSeen: () => set({ introSeen: true }),
       setActiveIsland: (activeIsland) => set({ activeIsland }),
+      updateGeoBestScore: (score) =>
+        set((s) => ({ geoBestScore: Math.max(s.geoBestScore, score) })),
 
       earnStamp: (provinceSlug, score, total) =>
         set((s) => ({
@@ -97,6 +102,7 @@ export const useNusantaraStore = create<NusantaraState>()(
         mapMode: state.mapMode,
         soundEnabled: state.soundEnabled,
         introSeen: state.introSeen,
+        geoBestScore: state.geoBestScore,
         stamps: state.stamps,
       }),
       onRehydrateStorage: () => (state) => {

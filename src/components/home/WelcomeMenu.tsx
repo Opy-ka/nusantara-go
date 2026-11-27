@@ -2,15 +2,17 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  ArrowLeftRight,
   Award,
   BookOpen,
   Calendar,
   Compass,
   Globe,
   Moon,
-  Shuffle,
+  Route,
   Sparkles,
   Sun,
+  Target,
 } from "lucide-react";
 import { Locale } from "@/types/culture";
 import { TOTAL_INDONESIA_PROVINCES } from "@/data/provinces";
@@ -22,7 +24,9 @@ interface WelcomeMenuProps {
   isNight: boolean;
   stampCount: number;
   onStartMap: () => void;
-  onSurprise: () => void;
+  onStartTour: () => void;
+  onStartGeoGame: () => void;
+  onOpenCompare: () => void;
   onOpenPassport: () => void;
   onOpenExploreHub: (tab: ExploreHubTab) => void;
   onToggleLocale: () => void;
@@ -35,7 +39,9 @@ export function WelcomeMenu({
   isNight,
   stampCount,
   onStartMap,
-  onSurprise,
+  onStartTour,
+  onStartGeoGame,
+  onOpenCompare,
   onOpenPassport,
   onOpenExploreHub,
   onToggleLocale,
@@ -159,6 +165,26 @@ export function WelcomeMenu({
                 </span>
               </button>
 
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={onStartTour}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[#D49B35]/45 bg-[#231A14] px-3 py-2.5 text-xs font-semibold text-[#F2BC52] transition-opacity hover:opacity-90"
+                >
+                  <Route className="h-3.5 w-3.5" />
+                  <span>{locale === "id" ? "Tur Jalur Budaya 3D" : "3D Story Tours"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onStartGeoGame}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[#D49B35]/45 bg-[#231A14] px-3 py-2.5 text-xs font-semibold text-[#F2BC52] transition-opacity hover:opacity-90"
+                >
+                  <Target className="h-3.5 w-3.5" />
+                  <span>{locale === "id" ? "Tebak Provinsi 3D" : "Geo-Culture Game"}</span>
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <button
                   type="button"
@@ -189,26 +215,22 @@ export function WelcomeMenu({
 
                 <button
                   type="button"
-                  onClick={onOpenPassport}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[#D49B35]"
+                  onClick={onOpenCompare}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)]"
                 >
-                  <Award className="h-3.5 w-3.5 text-[#D49B35]" />
-                  <span className="tabular-nums">
-                    {locale === "id" ? "Paspor" : "Passport"} ({stampCount}/
-                    {TOTAL_INDONESIA_PROVINCES})
-                  </span>
+                  <ArrowLeftRight className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <span>{locale === "id" ? "Bandingkan 2" : "Compare 2"}</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={onSurprise}
-                  className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)] sm:col-span-2"
+                  onClick={onOpenPassport}
+                  className="col-span-1 flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[#D49B35] sm:col-span-2"
                 >
-                  <Shuffle className="h-3.5 w-3.5 text-[var(--accent)]" />
-                  <span>
-                    {locale === "id"
-                      ? "Kejutkan Aku (Provinsi Acak)"
-                      : "Surprise Me (Random Province)"}
+                  <Award className="h-3.5 w-3.5 text-[#D49B35]" />
+                  <span className="tabular-nums">
+                    {locale === "id" ? "Paspor Budaya" : "Passport"} ({stampCount}/
+                    {TOTAL_INDONESIA_PROVINCES})
                   </span>
                 </button>
               </div>
