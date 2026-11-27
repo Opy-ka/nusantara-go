@@ -10,12 +10,12 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-import { Locale, Province } from "@/types/culture";
+import { CategoryKey, Locale, Province } from "@/types/culture";
 import { CATEGORY_LABELS } from "@/lib/i18n";
 
 export interface GeoGameRound {
   province: Province;
-  clueCategory: "rumah-adat" | "kuliner" | "tarian" | "alat-musik";
+  clueCategory: CategoryKey;
   clueName: { id: string; en: string };
   clueSummary: { id: string; en: string };
 }

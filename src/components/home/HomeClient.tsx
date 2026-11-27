@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Compass, RotateCcw, Shuffle } from "lucide-react";
 import { ALL_PROVINCES } from "@/data/provinces";
 import { STORY_TOURS, StoryTour } from "@/data/storyTours";
-import { Province } from "@/types/culture";
+import { CategoryKey, Province } from "@/types/culture";
 import { useNusantaraStore } from "@/store/useNusantaraStore";
 import { UI_COPY, t } from "@/lib/i18n";
 import { playHoverTone, playProvinceChime, playStampSound } from "@/lib/sound";
@@ -40,22 +40,55 @@ const DioramaCanvas = dynamic(
   }
 );
 
-function generateGeoRounds(count = 5): GeoGameRound[] {
-  const cats: GeoGameRound["clueCategory"][] = [
-    "rumah-adat",
-    "kuliner",
-    "tarian",
-    "alat-musik",
-  ];
-  const shuffled = [...ALL_PROVINCES].sort(() => Math.random() - 0.5);
-  const picks = shuffled.slice(0, count);
-  return picks.map((province, idx) => {
-    const cat = cats[idx % cats.length];
+const GEO_CLUE_CATEGORIES: CategoryKey[] = [
+  "rumah-adat",
+  "tarian",
+  "pakaian",
+  "kuliner",
+  "alat-musik",
+  "senjata",
+  "upacara",
+  "wisata",
+];
+
+function secureRandomInt(max: number): number {
+  if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+    const arr = new Uint32Array(1);
+    window.crypto.getRandomValues(arr);
+    return arr[0] % max;
+  }
+  return Math.floor(Math.random() * max);
+}
+
+function fisherYatesShuffle<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = secureRandomInt(i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function generateGeoRounds(
+  count: number,
+  recentSlugs: Set<string>
+): GeoGameRound[] {
+  let pool = ALL_PROVINCES.filter((p) => !recentSlugs.has(p.slug));
+  if (pool.length < count) {
+    recentSlugs.clear();
+    pool = [...ALL_PROVINCES];
+  }
+  const picks = fisherYatesShuffle(pool).slice(0, count);
+  picks.forEach((p) => recentSlugs.add(p.slug));
+
+  return picks.map((province) => {
+    const cat =
+      GEO_CLUE_CATEGORIES[secureRandomInt(GEO_CLUE_CATEGORIES.length)];
     const item =
       province.items.find((it) => it.category === cat) ?? province.items[0];
     return {
       province,
-      clueCategory: cat,
+      clueCategory: item.category,
       clueName: item.name,
       clueSummary: item.summary,
     };
@@ -97,6 +130,7 @@ export function HomeClient() {
   const [tourStopIndex, setTourStopIndex] = useState(0);
 
   // Geo-Culture 3D Game state
+  const recentGeoSlugsRef = useRef<Set<string>>(new Set());
   const [geoRounds, setGeoRounds] = useState<GeoGameRound[]>([]);
   const [geoIndex, setGeoIndex] = useState(0);
   const [geoScore, setGeoScore] = useState(0);
@@ -154,7 +188,7 @@ export function HomeClient() {
     setExploreOpen(false);
     markIntroSeen();
     setSelectedProvince(null);
-    setGeoRounds(generateGeoRounds(5));
+    setGeoRounds(generateGeoRounds(5, recentGeoSlugsRef.current));
     setGeoIndex(0);
     setGeoScore(0);
     setGeoHint(false);
