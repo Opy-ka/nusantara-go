@@ -4,14 +4,17 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Award,
   BookOpen,
+  Calendar,
   Compass,
   Globe,
   Moon,
   Shuffle,
+  Sparkles,
   Sun,
 } from "lucide-react";
 import { Locale } from "@/types/culture";
 import { TOTAL_INDONESIA_PROVINCES } from "@/data/provinces";
+import { ExploreHubTab } from "./ExploreHubModal";
 
 interface WelcomeMenuProps {
   open: boolean;
@@ -21,7 +24,7 @@ interface WelcomeMenuProps {
   onStartMap: () => void;
   onSurprise: () => void;
   onOpenPassport: () => void;
-  onJumpDirectory: () => void;
+  onOpenExploreHub: (tab: ExploreHubTab) => void;
   onToggleLocale: () => void;
   onToggleTheme: () => void;
 }
@@ -34,7 +37,7 @@ export function WelcomeMenu({
   onStartMap,
   onSurprise,
   onOpenPassport,
-  onJumpDirectory,
+  onOpenExploreHub,
   onToggleLocale,
   onToggleTheme,
 }: WelcomeMenuProps) {
@@ -51,7 +54,7 @@ export function WelcomeMenu({
           aria-modal="true"
           aria-label="Menu Utama Nusantara.go"
         >
-          {/* Top-right subtle language & theme switches */}
+          {/* Top-right language & theme switches */}
           <div className="absolute top-5 right-5 flex items-center gap-2">
             <button
               type="button"
@@ -64,7 +67,15 @@ export function WelcomeMenu({
               ) : (
                 <Moon className="h-3.5 w-3.5 text-[#F2BC52]" />
               )}
-              <span>{isNight ? (locale === "id" ? "Siang" : "Day") : locale === "id" ? "Malam" : "Night"}</span>
+              <span>
+                {isNight
+                  ? locale === "id"
+                    ? "Siang"
+                    : "Day"
+                  : locale === "id"
+                  ? "Malam"
+                  : "Night"}
+              </span>
             </button>
 
             <button
@@ -82,10 +93,9 @@ export function WelcomeMenu({
             initial={{ y: 18, scale: 0.97, opacity: 0 }}
             animate={{ y: 0, scale: 1, opacity: 1 }}
             exit={{ y: -14, scale: 0.98, opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-[#D49B35]/35 bg-[var(--bg-canvas)]/95 p-7 text-center shadow-2xl sm:p-10"
+            transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-[#D49B35]/35 bg-[var(--bg-canvas)]/95 p-7 text-center shadow-2xl sm:p-9"
           >
-            {/* Subtle Kawung Corner Motifs */}
             <svg
               aria-hidden="true"
               className="pointer-events-none absolute -top-8 -left-8 h-32 w-32 opacity-[0.08] text-[var(--ink-primary)]"
@@ -109,7 +119,6 @@ export function WelcomeMenu({
               <circle cx="90" cy="60" r="18" />
             </svg>
 
-            {/* Brand Crest */}
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#231A14] shadow-md ring-2 ring-[#D49B35]/40">
               <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
                 <ellipse cx="16" cy="9.5" rx="3.4" ry="5.8" fill="#D49B35" />
@@ -126,18 +135,17 @@ export function WelcomeMenu({
                 : "3D Cultural Diorama · All 38 Indonesian Provinces"}
             </p>
 
-            <h1 className="mt-2 font-serif text-4xl font-bold tracking-tight text-[var(--ink-primary)] sm:text-5xl">
+            <h1 className="mt-1.5 font-serif text-4xl font-bold tracking-tight text-[var(--ink-primary)] sm:text-5xl">
               Nusantara<span className="text-[var(--accent)]">.go</span>
             </h1>
 
-            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[var(--ink-secondary)]">
+            <p className="mx-auto mt-2.5 max-w-md text-sm leading-relaxed text-[var(--ink-secondary)]">
               {locale === "id"
-                ? "Selamat datang di peta budaya 3D Indonesia. Pilih menu di bawah untuk memulai perjalanan dari Sabang sampai Merauke."
-                : "Welcome to Indonesia's interactive 3D cultural atlas. Choose an entry below to begin your journey from Sabang to Merauke."}
+                ? "Jelajahi peta budaya 3D Indonesia secara layar penuh, atau buka sorotan budaya, panggung bunyi, direktori, dan festival dari menu ini."
+                : "Explore Indonesia's full-screen 3D cultural map, or open cultural spotlights, soundpad, directory, and festivals right from here."}
             </p>
 
-            {/* Primary & Secondary Menu Actions */}
-            <div className="mt-7 space-y-2.5">
+            <div className="mt-6 space-y-2.5">
               <button
                 type="button"
                 onClick={onStartMap}
@@ -151,20 +159,38 @@ export function WelcomeMenu({
                 </span>
               </button>
 
-              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <button
                   type="button"
-                  onClick={onSurprise}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 py-3 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)]"
+                  onClick={() => onOpenExploreHub("spotlight")}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)]"
                 >
-                  <Shuffle className="h-3.5 w-3.5 text-[var(--accent)]" />
-                  <span>{locale === "id" ? "Kejutkan Aku" : "Surprise Me"}</span>
+                  <Sparkles className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <span>{locale === "id" ? "Sorotan & Bunyi" : "Spotlight"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onOpenExploreHub("directory")}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)]"
+                >
+                  <BookOpen className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <span>{locale === "id" ? "Direktori 38" : "Directory"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => onOpenExploreHub("festivals")}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)]"
+                >
+                  <Calendar className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <span>{locale === "id" ? "Festival" : "Festivals"}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={onOpenPassport}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 py-3 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[#D49B35]"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[#D49B35]"
                 >
                   <Award className="h-3.5 w-3.5 text-[#D49B35]" />
                   <span className="tabular-nums">
@@ -175,19 +201,23 @@ export function WelcomeMenu({
 
                 <button
                   type="button"
-                  onClick={onJumpDirectory}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 py-3 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)]"
+                  onClick={onSurprise}
+                  className="col-span-2 flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 text-xs font-semibold text-[var(--ink-primary)] transition-colors hover:border-[var(--accent)] sm:col-span-2"
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-[var(--accent)]" />
-                  <span>{locale === "id" ? "Direktori" : "Directory"}</span>
+                  <Shuffle className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <span>
+                    {locale === "id"
+                      ? "Kejutkan Aku (Provinsi Acak)"
+                      : "Surprise Me (Random Province)"}
+                  </span>
                 </button>
               </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-center gap-4 text-[11px] text-[var(--ink-muted)] tabular-nums">
+            <div className="mt-5 flex items-center justify-center gap-4 text-[11px] text-[var(--ink-muted)] tabular-nums">
               <span>38 {locale === "id" ? "Provinsi" : "Provinces"}</span>
               <span>·</span>
-              <span>342 {locale === "id" ? "Warisan Budaya" : "Cultural Entries"}</span>
+              <span>342 {locale === "id" ? "Warisan Budaya" : "Entries"}</span>
               <span>·</span>
               <span>15 {locale === "id" ? "Arsitektur 3D" : "3D Landmarks"}</span>
             </div>
