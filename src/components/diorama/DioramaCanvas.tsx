@@ -191,16 +191,12 @@ export function DioramaCanvas({
 
         {/* All 38 Active Provinces of Indonesia */}
         {ALL_PROVINCES.map((province) => {
-          const inFocusedIsland =
-            activeIsland === "all" || province.island === activeIsland;
+          const isSelected = selectedProvince?.slug === province.slug;
           const isDimmed =
-            (selectedProvince !== null &&
-              selectedProvince.slug !== province.slug) ||
-            (selectedProvince === null && !inFocusedIsland);
+            selectedProvince !== null && !isSelected;
 
-          // Show labels cleanly only for focused island (prevents 38 overlapping labels in overview)
-          const showLabel =
-            activeIsland !== "all" && province.island === activeIsland;
+          // Only allow hover label when nothing is selected; when selected, ONLY the selected province shows its label
+          const showLabel = selectedProvince === null;
 
           return (
             <ProvinceTile3D
@@ -208,7 +204,7 @@ export function DioramaCanvas({
               province={province}
               locale={locale}
               activeCategory={activeCategory}
-              isSelected={selectedProvince?.slug === province.slug}
+              isSelected={isSelected}
               isDimmed={isDimmed}
               showLabel={showLabel}
               hasStamp={Boolean(stamps[province.slug])}
@@ -230,10 +226,10 @@ export function DioramaCanvas({
         />
       </Canvas>
 
-      {/* State-tracked portal node guarantees non-null mount for drei <Html> */}
+      {/* State-tracked portal node guarantees non-null mount for drei <Html> and stays below Drawer (z-30) */}
       <div
         ref={setPortalNode}
-        className="pointer-events-none absolute inset-0 overflow-hidden"
+        className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
       />
 
       {playIntro && !reducedMotion && (

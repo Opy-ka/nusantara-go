@@ -110,7 +110,7 @@ export function ProvinceTile3D({
     : province.themeColor;
 
   const shouldRenderLabel =
-    portalNode !== null && (showLabel || activeHighlight);
+    portalNode !== null && (isSelected || (showLabel && hovered));
 
   return (
     <group ref={groupRef}>
@@ -164,23 +164,15 @@ export function ProvinceTile3D({
       {shouldRenderLabel && (
         <Html
           portal={{ current: portalNode }}
-          position={[province.center3D[0], 1.38, province.center3D[1]]}
+          position={[province.center3D[0], 1.25, province.center3D[1]]}
           center
-          distanceFactor={16}
+          zIndexRange={[10, 0]}
           style={{ pointerEvents: "none" }}
         >
-          <div
-            className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-medium transition-opacity duration-200 ${
-              activeHighlight
-                ? "bg-[#231A14] text-[#F7F2E8] shadow-lg ring-1 ring-[#D49B35]"
-                : isNight
-                ? "bg-[#1E1815]/88 text-[#F5EFE4] border border-white/15"
-                : "bg-[#F7F2E8]/92 text-[#231A14] border border-[#231A14]/15 shadow-sm"
-            }`}
-          >
+          <div className="whitespace-nowrap rounded-full bg-[#231A14]/92 px-3 py-1 text-xs font-medium text-[#F7F2E8] shadow-md ring-1 ring-[#D49B35]/80 backdrop-blur-sm">
             <span>{province.name[locale]}</span>
             {categoryItem && (
-              <span className="ml-1.5 text-[10px] font-semibold text-[#D49B35]">
+              <span className="ml-1.5 text-[11px] font-semibold text-[#F2BC52]">
                 · {categoryItem.name[locale]}
               </span>
             )}

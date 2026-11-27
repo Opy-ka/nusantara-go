@@ -27,7 +27,7 @@ import {
   getProvincesByIsland,
 } from "@/data/provinces";
 import { NATIONAL_FESTIVALS } from "@/data/festivals";
-import { CategoryKey, IslandKey, Province } from "@/types/culture";
+import { IslandKey, Province } from "@/types/culture";
 import { useNusantaraStore } from "@/store/useNusantaraStore";
 import { CATEGORY_LABELS, UI_COPY, t } from "@/lib/i18n";
 import {
@@ -112,7 +112,6 @@ export function HomeClient() {
     null
   );
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
-  const [mapCategory, setMapCategory] = useState<CategoryKey | "all">("all");
   const [explorerIsland, setExplorerIsland] = useState<IslandKey>("sumatra");
   const [festivalFilter, setFestivalFilter] = useState<IslandKey | "all">("all");
   const [quizProvince, setQuizProvince] = useState<Province | null>(null);
@@ -273,7 +272,7 @@ export function HomeClient() {
               locale={safeLocale}
               isNight={isNight}
               activeIsland={activeIsland}
-              activeCategory={mapCategory}
+              activeCategory="all"
               selectedProvince={selectedProvince}
               stamps={safeStamps}
               playIntro={hasHydrated && !introSeen}
@@ -281,7 +280,7 @@ export function HomeClient() {
               onSelectProvince={(prov) => {
                 setSelectedProvince(prov);
                 if (prov) {
-                  setActiveIsland(prov.island);
+                  setActiveIsland("all");
                   playProvinceChime(soundEnabled, prov.name.id.length);
                 }
               }}
@@ -353,78 +352,6 @@ export function HomeClient() {
               </span>
             </button>
           )}
-        </div>
-
-        {/* Bottom Dock: 7-Region Island Switcher + Category Lens */}
-        <div className="absolute right-4 bottom-4 left-4 z-20 flex flex-col items-start gap-2 sm:items-center">
-          {activeIsland !== "all" && (
-            <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-canvas)]/88 p-1 backdrop-blur-md">
-              {(
-                [
-                  "all",
-                  "rumah-adat",
-                  "tarian",
-                  "kuliner",
-                  "alat-musik",
-                  "wisata",
-                ] as const
-              ).map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setMapCategory(cat)}
-                  className={`whitespace-nowrap rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors ${mapCategory === cat
-                    ? "bg-[#231A14] text-[#F2BC52]"
-                    : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
-                    }`}
-                >
-                  {cat === "all"
-                    ? safeLocale === "id"
-                      ? "Nama Provinsi"
-                      : "Province Names"
-                    : CATEGORY_LABELS[cat][safeLocale]}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <nav
-            aria-label="Island region switcher"
-            className="no-scrollbar flex max-w-full gap-1 overflow-x-auto rounded-xl border border-[var(--border-strong)] bg-[var(--bg-canvas)]/92 p-1.5 shadow-lg backdrop-blur-md"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedProvince(null);
-                setActiveIsland("all");
-              }}
-              className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${activeIsland === "all"
-                ? "bg-[#231A14] text-[#F2BC52]"
-                : "text-[var(--ink-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--ink-primary)]"
-                }`}
-            >
-              Nusantara (38)
-            </button>
-            {ISLAND_REGIONS.map((reg) => {
-              const active = activeIsland === reg.key;
-              return (
-                <button
-                  key={reg.key}
-                  type="button"
-                  onClick={() => {
-                    setSelectedProvince(null);
-                    setActiveIsland(reg.key);
-                  }}
-                  className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${active
-                    ? "bg-[var(--accent)] text-[#F7F2E8]"
-                    : "text-[var(--ink-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--ink-primary)]"
-                    }`}
-                >
-                  {reg.name[safeLocale]}
-                </button>
-              );
-            })}
-          </nav>
         </div>
 
         <ProvinceDrawer

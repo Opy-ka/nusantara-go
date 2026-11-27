@@ -109,12 +109,12 @@ export function Map2DFallback({
                   strokeWidth="1.2"
                 />
               )}
-              {(isSelected || activeIsland === province.island) && (
+              {isSelected && (
                 <text
                   x={cx}
                   y={cy - 7}
                   textAnchor="middle"
-                  className="fill-[#F7F2E8] text-[9px] font-semibold drop-shadow"
+                  className="fill-[#F7F2E8] text-[10px] font-semibold drop-shadow"
                 >
                   {province.name[locale]}
                 </text>
