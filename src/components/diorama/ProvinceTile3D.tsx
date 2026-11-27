@@ -7,21 +7,29 @@ import * as THREE from "three";
 import { CategoryKey, Locale, Province } from "@/types/culture";
 import { Landmark3D } from "./Landmark3D";
 
-function buildExtrudedShape(points: [number, number][], depth = 0.42) {
-  const shape = new THREE.Shape();
-  points.forEach(([x, z], idx) => {
-    if (idx === 0) shape.moveTo(x, -z);
-    else shape.lineTo(x, -z);
-  });
-  shape.closePath();
+function buildMultiPolygonGeometry(
+  polygons: [number, number][][],
+  depth = 0.34
+) {
+  const shapes: THREE.Shape[] = [];
+  for (const ring of polygons) {
+    if (ring.length < 3) continue;
+    const shape = new THREE.Shape();
+    ring.forEach(([x, z], idx) => {
+      if (idx === 0) shape.moveTo(x, -z);
+      else shape.lineTo(x, -z);
+    });
+    shape.closePath();
+    shapes.push(shape);
+  }
 
-  const geo = new THREE.ExtrudeGeometry(shape, {
+  const geo = new THREE.ExtrudeGeometry(shapes, {
     depth,
     bevelEnabled: true,
-    bevelThickness: 0.05,
-    bevelSize: 0.04,
-    bevelSegments: 2,
-    curveSegments: 4,
+    bevelThickness: 0.035,
+    bevelSize: 0.022,
+    bevelSegments: 1,
+    curveSegments: 2,
   });
   geo.rotateX(-Math.PI / 2);
   return geo;
@@ -59,13 +67,16 @@ export function ProvinceTile3D({
   const groupRef = useRef<THREE.Group>(null);
   const [hovered, setHovered] = useState(false);
 
-  const geometry = useMemo(
-    () => buildExtrudedShape(province.polygon2D, 0.42),
-    [province.polygon2D]
-  );
+  const geometry = useMemo(() => {
+    const polys =
+      province.polygons3D && province.polygons3D.length > 0
+        ? province.polygons3D
+        : [province.polygon2D];
+    return buildMultiPolygonGeometry(polys, 0.34);
+  }, [province.polygons3D, province.polygon2D]);
 
   const edgesGeometry = useMemo(
-    () => new THREE.EdgesGeometry(geometry, 28),
+    () => new THREE.EdgesGeometry(geometry, 32),
     [geometry]
   );
 
@@ -83,7 +94,7 @@ export function ProvinceTile3D({
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
-    const targetY = isSelected ? 0.38 : hovered ? 0.24 : 0;
+    const targetY = isSelected ? 0.34 : hovered ? 0.2 : 0;
     groupRef.current.position.y = THREE.MathUtils.lerp(
       groupRef.current.position.y,
       targetY,
@@ -98,7 +109,8 @@ export function ProvinceTile3D({
       : "#B4AA9B"
     : province.themeColor;
 
-  const shouldRenderLabel = portalNode !== null && (showLabel || activeHighlight);
+  const shouldRenderLabel =
+    portalNode !== null && (showLabel || activeHighlight);
 
   return (
     <group ref={groupRef}>
@@ -125,35 +137,34 @@ export function ProvinceTile3D({
         <meshStandardMaterial
           color={baseColor}
           roughness={0.78}
-          metalness={0.06}
+          metalness={0.05}
           emissive={activeHighlight ? "#D49B35" : "#000000"}
-          emissiveIntensity={activeHighlight ? (isNight ? 0.5 : 0.28) : 0}
+          emissiveIntensity={activeHighlight ? (isNight ? 0.5 : 0.26) : 0}
         />
       </mesh>
 
-      {/* Golden signature rim border */}
+      {/* Subtle golden/parchment provincial border edges */}
       <lineSegments geometry={edgesGeometry}>
         <lineBasicMaterial
           color={activeHighlight ? "#F2BC52" : isNight ? "#594A3E" : "#3E2F24"}
           transparent
-          opacity={activeHighlight ? 0.95 : 0.3}
+          opacity={activeHighlight ? 0.95 : 0.34}
         />
       </lineSegments>
 
       {/* Floating 3D Regional Landmark */}
       <Landmark3D
         type={province.landmarkType}
-        position={[province.center3D[0], 0.52, province.center3D[1]]}
+        position={[province.center3D[0], 0.44, province.center3D[1]]}
         isHovered={activeHighlight}
         isNight={isNight}
         reducedMotion={reducedMotion}
       />
 
-      {/* Floating Label — only mounted once portalNode is guaranteed ready */}
       {shouldRenderLabel && (
         <Html
           portal={{ current: portalNode }}
-          position={[province.center3D[0], 1.48, province.center3D[1]]}
+          position={[province.center3D[0], 1.38, province.center3D[1]]}
           center
           distanceFactor={16}
           style={{ pointerEvents: "none" }}

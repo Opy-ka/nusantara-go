@@ -91,6 +91,8 @@ export interface Province {
   landmarkName: LocalizedText;
   /** Non-overlapping 2D polygon vertices in diorama space [x, z] */
   polygon2D: [number, number][];
+  /** Real multi-island polygons projected from Indonesia 38-province GeoJSON */
+  polygons3D?: [number, number][][];
   /** Center position in 3D diorama space [x, z] */
   center3D: [number, number];
   /** Camera position when flying to this province */

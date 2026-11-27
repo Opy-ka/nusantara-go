@@ -36,6 +36,7 @@ import {
   playProvinceChime,
 } from "@/lib/sound";
 import { NusantaraHeader } from "@/components/layout/NusantaraHeader";
+import { WelcomeMenu } from "@/components/home/WelcomeMenu";
 import { ProvinceDrawer } from "@/components/map/ProvinceDrawer";
 import { Map2DFallback } from "@/components/diorama/Map2DFallback";
 import { WebGLErrorBoundary } from "@/components/diorama/WebGLErrorBoundary";
@@ -97,6 +98,8 @@ export function HomeClient() {
     introSeen,
     activeIsland,
     stamps,
+    toggleLocale,
+    toggleThemeMode,
     markIntroSeen,
     setActiveIsland,
     earnStamp,
@@ -104,9 +107,11 @@ export function HomeClient() {
     importBackupCode,
   } = useNusantaraStore();
 
+  const [menuOpen, setMenuOpen] = useState(true);
   const [selectedProvince, setSelectedProvince] = useState<Province | null>(
     null
   );
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const [mapCategory, setMapCategory] = useState<CategoryKey | "all">("all");
   const [explorerIsland, setExplorerIsland] = useState<IslandKey>("sumatra");
   const [festivalFilter, setFestivalFilter] = useState<IslandKey | "all">("all");
@@ -115,6 +120,7 @@ export function HomeClient() {
 
   const pageRef = useRef<HTMLDivElement>(null);
   const mapSectionRef = useRef<HTMLElement>(null);
+  const directoryRef = useRef<HTMLElement>(null);
 
   const safeLocale = hasHydrated ? locale : "id";
   const safeTheme = hasHydrated ? themeMode : "day";
@@ -140,6 +146,15 @@ export function HomeClient() {
   useEffect(() => {
     document.documentElement.dataset.theme = safeTheme;
   }, [safeTheme]);
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("map") === "1"
+    ) {
+      setMenuOpen(false);
+    }
+  }, []);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -203,11 +218,27 @@ export function HomeClient() {
   };
 
   const handleHoverProvince = (slug: string | null) => {
+    setHoveredSlug(slug);
     if (slug) {
       const idx = ALL_PROVINCES.findIndex((p) => p.slug === slug);
       playHoverTone(soundEnabled, idx >= 0 ? idx : 0);
     }
   };
+
+  const hoveredProvince = useMemo(
+    () => (hoveredSlug ? ALL_PROVINCES.find((p) => p.slug === hoveredSlug) : null),
+    [hoveredSlug]
+  );
+
+  const activeRegionLabel = selectedProvince
+    ? `${selectedProvince.name[safeLocale]} · ${selectedProvince.capital}`
+    : hoveredProvince
+    ? `${hoveredProvince.name[safeLocale]} · ${hoveredProvince.islandLabel[safeLocale]}`
+    : activeIsland !== "all"
+    ? ISLAND_REGIONS.find((r) => r.key === activeIsland)?.name[safeLocale] ?? "Nusantara"
+    : safeLocale === "id"
+    ? "Kepulauan Indonesia · 38 Provinsi"
+    : "Indonesian Archipelago · 38 Provinces";
 
   return (
     <div ref={pageRef} className="min-h-screen bg-[var(--bg-canvas)]">
@@ -272,41 +303,56 @@ export function HomeClient() {
           />
         )}
 
-        {/* Compact Top-Left Floating Controls (leaves 3D islands unobstructed) */}
-        <div className="pointer-events-none absolute top-4 left-4 z-20 max-w-xs sm:max-w-sm">
-          <div className="pointer-events-auto rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-canvas)]/88 px-4 py-3.5 shadow-lg backdrop-blur-md">
-            <p className="text-[10px] font-semibold tracking-wider text-[var(--accent)] uppercase">
-              {t(UI_COPY.heroEyebrow, safeLocale)}
-            </p>
-            <h1 className="mt-1 font-serif text-xl leading-snug font-bold tracking-tight text-[var(--ink-primary)] sm:text-2xl">
-              {t(UI_COPY.heroTitle, safeLocale)}
-            </h1>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleSurpriseMe}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[#F7F2E8] transition-colors hover:bg-[var(--accent-hover)]"
-              >
-                <Shuffle className="h-3.5 w-3.5" />
-                {t(UI_COPY.ctaSurprise, safeLocale)}
-              </button>
-
-              {(selectedProvince || activeIsland !== "all") && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedProvince(null);
-                    setActiveIsland("all");
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs font-medium text-[var(--ink-primary)] hover:border-[var(--accent)]"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  {t(UI_COPY.resetCamera, safeLocale)}
-                </button>
-              )}
+        {/* Sleek Artisan Compass Navigator HUD (replaces old top-left box, zero island obstruction) */}
+        <div className="pointer-events-none absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">
+          <div className="pointer-events-auto flex items-center gap-2.5 rounded-full border border-white/15 bg-[#1B1410]/80 py-1.5 pr-3.5 pl-2 text-[#F7F2E8] shadow-lg backdrop-blur-md">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#D49B35]/20 text-[#F2BC52]">
+              <Compass
+                className={`h-4 w-4 transition-transform duration-500 ${
+                  selectedProvince || hoveredProvince ? "rotate-45" : ""
+                }`}
+              />
+            </span>
+            <div className="leading-tight">
+              <div className="text-[10px] font-medium tracking-wider text-[#D49B35] uppercase">
+                {safeLocale === "id" ? "Navigasi Peta" : "Map Navigator"}
+              </div>
+              <div className="text-xs font-semibold">{activeRegionLabel}</div>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-[#1B1410]/75 px-3.5 text-xs font-medium text-[#F7F2E8] shadow-md backdrop-blur-md transition-colors hover:bg-[#1B1410]"
+          >
+            {safeLocale === "id" ? "Menu Utama" : "Main Menu"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSurpriseMe}
+            className="pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--accent)] px-3.5 text-xs font-medium text-[#F7F2E8] shadow-md transition-colors hover:bg-[var(--accent-hover)]"
+          >
+            <Shuffle className="h-3.5 w-3.5" />
+            <span>{t(UI_COPY.ctaSurprise, safeLocale)}</span>
+          </button>
+
+          {(selectedProvince || activeIsland !== "all") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedProvince(null);
+                setActiveIsland("all");
+              }}
+              className="pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-full border border-white/15 bg-[#1B1410]/75 px-3 text-xs font-medium text-[#F2BC52] shadow-md backdrop-blur-md transition-colors hover:bg-[#1B1410]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">
+                {t(UI_COPY.resetCamera, safeLocale)}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Bottom Dock: 7-Region Island Switcher + Category Lens */}
@@ -524,7 +570,7 @@ export function HomeClient() {
         </section>
 
         {/* SECTION 2: Interactive 7-Island Explorer (All 38 Provinces, Editorial Tabs) */}
-        <section className="reveal-section">
+        <section ref={directoryRef} className="reveal-section">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-xs font-medium text-[var(--ink-muted)]">
@@ -749,6 +795,34 @@ export function HomeClient() {
           </p>
         </div>
       </footer>
+
+      <WelcomeMenu
+        open={menuOpen}
+        locale={safeLocale}
+        isNight={isNight}
+        stampCount={Object.keys(safeStamps).length}
+        onStartMap={() => {
+          setMenuOpen(false);
+          markIntroSeen();
+        }}
+        onSurprise={() => {
+          setMenuOpen(false);
+          markIntroSeen();
+          handleSurpriseMe();
+        }}
+        onOpenPassport={() => {
+          setMenuOpen(false);
+          setPassportOpen(true);
+        }}
+        onJumpDirectory={() => {
+          setMenuOpen(false);
+          setTimeout(() => {
+            directoryRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 150);
+        }}
+        onToggleLocale={toggleLocale}
+        onToggleTheme={toggleThemeMode}
+      />
 
       <QuizModal
         province={quizProvince}

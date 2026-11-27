@@ -11,8 +11,8 @@ import { BatikOcean } from "./BatikOcean";
 import { ProvinceTile3D } from "./ProvinceTile3D";
 import { Atmosphere3D } from "./Atmosphere3D";
 
-const ARCHIPELAGO_CAMERA_POS: [number, number, number] = [1.2, 16.5, 18.8];
-const ARCHIPELAGO_TARGET: [number, number, number] = [1.2, 0.2, -0.6];
+const ARCHIPELAGO_CAMERA_POS: [number, number, number] = [0.2, 16.8, 20.8];
+const ARCHIPELAGO_TARGET: [number, number, number] = [0.2, 0.2, 0.4];
 
 interface CameraRigProps {
   selectedProvince: Province | null;

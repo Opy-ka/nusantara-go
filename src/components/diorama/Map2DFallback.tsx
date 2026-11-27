@@ -14,7 +14,7 @@ interface Map2DFallbackProps {
 
 function toSvgPoints(poly: [number, number][]): string {
   return poly
-    .map(([x, z]) => `${(x + 16) * 28.5},${(z + 8.5) * 32}`)
+    .map(([x, z]) => `${(x + 16.5) * 31},${(z + 6.5) * 31}`)
     .join(" ");
 }
 
@@ -33,7 +33,7 @@ export function Map2DFallback({
       }`}
     >
       <svg
-        viewBox="0 0 1020 430"
+        viewBox="0 0 1040 430"
         className="h-auto max-h-[82%] w-full max-w-6xl select-none"
         role="img"
         aria-label={
@@ -52,22 +52,26 @@ export function Map2DFallback({
             <circle
               cx="14"
               cy="14"
-              r="1.4"
+              r="1.3"
               fill={
                 isNight ? "rgba(242,188,82,0.14)" : "rgba(247,242,232,0.14)"
               }
             />
           </pattern>
         </defs>
-        <rect width="1020" height="430" fill="url(#batik-dots)" rx="16" />
+        <rect width="1040" height="430" fill="url(#batik-dots)" rx="16" />
 
         {ALL_PROVINCES.map((province) => {
           const isSelected = selectedProvince?.slug === province.slug;
           const isMuted =
             activeIsland !== "all" && province.island !== activeIsland;
           const hasStamp = Boolean(stamps[province.slug]);
-          const cx = (province.center3D[0] + 16) * 28.5;
-          const cy = (province.center3D[1] + 8.5) * 32;
+          const polys =
+            province.polygons3D && province.polygons3D.length > 0
+              ? province.polygons3D
+              : [province.polygon2D];
+          const cx = (province.center3D[0] + 16.5) * 31;
+          const cy = (province.center3D[1] + 6.5) * 31;
 
           return (
             <g
@@ -75,7 +79,7 @@ export function Map2DFallback({
               role="button"
               tabIndex={0}
               aria-label={`${province.name[locale]} — ${province.capital}`}
-              opacity={isMuted ? 0.32 : 1}
+              opacity={isMuted ? 0.3 : 1}
               onClick={() => onSelectProvince(province)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -85,27 +89,32 @@ export function Map2DFallback({
               }}
               className="cursor-pointer outline-none"
             >
-              <polygon
-                points={toSvgPoints(province.polygon2D)}
-                fill={province.themeColor}
-                stroke={isSelected ? "#F2BC52" : "#F7F2E8"}
-                strokeWidth={isSelected ? "2.8" : "1.1"}
-                className="transition-[filter,stroke-width] duration-200 hover:brightness-115"
-              />
-              <circle
-                cx={cx}
-                cy={cy}
-                r={isSelected ? 4.8 : 3.2}
-                fill={hasStamp ? "#3F6B4E" : "#F2BC52"}
-                stroke="#231A14"
-                strokeWidth="1.2"
-              />
+              {polys.map((ring, rIdx) => (
+                <polygon
+                  key={rIdx}
+                  points={toSvgPoints(ring)}
+                  fill={province.themeColor}
+                  stroke={isSelected ? "#F2BC52" : "#F7F2E8"}
+                  strokeWidth={isSelected ? "2.4" : "0.9"}
+                  className="transition-[filter,stroke-width] duration-200 hover:brightness-115"
+                />
+              ))}
+              {hasStamp && (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={4}
+                  fill="#3F6B4E"
+                  stroke="#F7F2E8"
+                  strokeWidth="1.2"
+                />
+              )}
               {(isSelected || activeIsland === province.island) && (
                 <text
                   x={cx}
-                  y={cy - 8}
+                  y={cy - 7}
                   textAnchor="middle"
-                  className="fill-[#F7F2E8] text-[9.5px] font-semibold drop-shadow"
+                  className="fill-[#F7F2E8] text-[9px] font-semibold drop-shadow"
                 >
                   {province.name[locale]}
                 </text>
@@ -117,8 +126,8 @@ export function Map2DFallback({
 
       <p className="mt-2 text-xs text-[#F5EFE4]/75">
         {locale === "id"
-          ? "Mode Peta 2D (38 Provinsi) · Klik atau tekan Tab + Enter pada provinsi mana saja"
-          : "2D Map Mode (All 38 Provinces) · Click or press Tab + Enter on any province"}
+          ? "Mode Peta 2D Asli Indonesia (38 Provinsi) · Klik provinsi mana saja"
+          : "2D Map of Indonesia (All 38 Provinces) · Click any province"}
       </p>
     </div>
   );
