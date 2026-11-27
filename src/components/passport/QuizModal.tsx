@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Award, CheckCircle2, Volume2, X, XCircle } from "lucide-react";
+import { CheckCircle2, Volume2, X, XCircle } from "lucide-react";
 import { Locale, Province } from "@/types/culture";
 import { playInstrumentPreview, playStampSound } from "@/lib/sound";
+import { ProvinceStampSvg } from "./ProvinceStampSvg";
 
 interface QuizModalProps {
   province: Province | null;
@@ -239,16 +240,14 @@ export function QuizModal({
                     stiffness: 320,
                     damping: 18,
                   }}
-                  className={`mx-auto mb-4 flex h-28 w-28 flex-col items-center justify-center rounded-full border-4 border-dashed ${
-                    passed
-                      ? "border-[#3F6B4E] bg-[#3F6B4E]/12 text-[#3F6B4E]"
-                      : "border-[var(--ink-muted)] bg-[var(--bg-surface)] text-[var(--ink-muted)]"
-                  }`}
+                  className="mx-auto mb-4 flex items-center justify-center"
                 >
-                  <Award className="h-8 w-8" />
-                  <span className="mt-1 text-[10px] font-bold tracking-wider uppercase">
-                    {province.code}
-                  </span>
+                  <ProvinceStampSvg
+                    province={province}
+                    earned={passed}
+                    size={128}
+                    scoreLabel={`${score}/${questions.length}`}
+                  />
                 </motion.div>
 
                 <h3 className="font-serif text-2xl font-semibold text-[var(--ink-primary)]">

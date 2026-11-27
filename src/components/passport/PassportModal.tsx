@@ -12,6 +12,7 @@ import {
 } from "@/data/provinces";
 import { StampRecord } from "@/store/useNusantaraStore";
 import { UI_COPY, t } from "@/lib/i18n";
+import { ProvinceStampSvg } from "./ProvinceStampSvg";
 
 interface PassportModalProps {
   open: boolean;
@@ -321,20 +322,18 @@ export function PassportModal({
                       }`}
                     >
                       <div
-                        className={`flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 border-dashed transition-transform group-hover:scale-105 ${
-                          record
-                            ? "-rotate-6 border-[#3F6B4E] bg-[#3F6B4E]/15 text-[#3F6B4E]"
-                            : "border-[var(--ink-muted)]/40 text-[var(--ink-muted)]"
+                        className={`transition-transform duration-200 group-hover:scale-105 ${
+                          record ? "-rotate-6" : ""
                         }`}
                       >
-                        <span className="text-[10px] font-bold tracking-wider">
-                          {prov.code}
-                        </span>
-                        {record && (
-                          <span className="text-[10px] tabular-nums">
-                            {record.score}/{record.total}
-                          </span>
-                        )}
+                        <ProvinceStampSvg
+                          province={prov}
+                          earned={Boolean(record)}
+                          size={78}
+                          scoreLabel={
+                            record ? `${record.score}/${record.total}` : undefined
+                          }
+                        />
                       </div>
                       <span className="mt-2 text-xs font-semibold text-[var(--ink-primary)]">
                         {prov.name[locale]}
